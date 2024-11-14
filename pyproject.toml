@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "twitch-transcriber"
+version = "0.1.0"
+description = "A tool to transcribe Twitch streams using Whisper"
+authors = ["Your Name <your.email@example.com>"]
+readme = "README.md"
+packages = [{include = "twitch_transcriber"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+streamlink = "^6.5.1"
+numpy = "^1.24.0"
+sounddevice = "^0.4.6"
+transformers = "^4.37.2"
+torch = "^2.2.0"
+
+[tool.poetry.scripts]
+transcribe = "twitch_transcriber.main:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
