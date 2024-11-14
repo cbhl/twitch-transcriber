@@ -6,7 +6,6 @@ from queue import Queue
 import streamlink
 import numpy as np
 import sounddevice as sd
-import whisper
 from transformers import pipeline
 
 def signal_handler(sig, frame):
@@ -37,14 +36,17 @@ class AudioTranscriber:
         def audio_callback(indata, frames, time, status):
             if status:
                 print(status)
-            audio_chunk = indata.copy()
+            # Ensure single channel by taking mean across channels if stereo
+            audio_chunk = np.mean(indata, axis=1) if indata.shape[1] > 1 else indata[:, 0]
             self.audio_queue.put(audio_chunk)
 
         try:
+            # Explicitly specify mono input
             with sd.InputStream(callback=audio_callback,
                               channels=1,
                               samplerate=SAMPLE_RATE,
-                              blocksize=CHUNK_SIZE):
+                              blocksize=CHUNK_SIZE,
+                              dtype=np.float32):
                 print("Streaming started. Press Ctrl+C to stop.")
                 
                 while True:
@@ -55,8 +57,13 @@ class AudioTranscriber:
                             chunk = self.audio_queue.get()
                             audio_data.extend(chunk)
                     
-                    # Convert to numpy array and transcribe
-                    audio_array = np.array(audio_data)
+                    # Convert to numpy array and ensure correct shape
+                    audio_array = np.array(audio_data, dtype=np.float32)
+                    
+                    # Ensure audio is properly shaped for the model
+                    if len(audio_array.shape) == 1:
+                        audio_array = audio_array.reshape(-1)
+                    
                     result = self.transcriber(audio_array)
                     
                     if result["text"].strip():
@@ -79,4 +86,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
